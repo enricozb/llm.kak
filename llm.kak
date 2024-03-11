@@ -1,4 +1,4 @@
-declare-option -docstring "file containing anthropic api key" str llm_key_file "/home/enricozb/projects/utilities/kakoune/llm.kak/secrets/claude-api-key"
+declare-option -docstring "file containing anthropic api key" str llm_key_file
 declare-option -hidden str llm_url "https://api.anthropic.com/v1/messages"
 declare-option -hidden str llm_version "anthropic-version: 2023-06-01"
 declare-option -hidden str llm_scratch
@@ -39,12 +39,17 @@ define-command -hidden llm-auto-complete %{
       --data "$(jq -n --arg context "$context" '{
           "model": "claude-3-opus-20240229",
           "max_tokens": 1024,
-          "system": "you are an auto-complete system for a text editor. you will be provided the content (as indented blocks) and paths of the files that are currently open in the editor, and the file that the user is currently working on. you will be provided with the cursor position, indicated by the text \"{{{cursor}}}\". pay attention to nearby comments and respond with what the user is trying to write. note that your entire response will replace \"{{{cursor}}}\" so respond ONLY with content that should be inserted into the current file, and nothing else. no yapping.",
+          "system": "you are an auto-complete system for a text editor. you will be provided the content (as indented blocks) and paths of the files that are currently open in the editor, and the file that the user is currently working on. you will be provided with the cursor position, indicated by the text \"{{{cursor}}}\". pay attention to nearby comments and respond with what the user is trying to write. note that your entire response will replace \"{{{cursor}}}\" so respond ONLY with content that should be inserted into the current file, and nothing else. no yapping. every single character you respond with will be substituted for {{{cursor}}}, so please do not respond with anything other than what should be substituted.",
           "messages": [
               {"role": "user", "content": $context}
           ]
-      }')" | jq .content[0].text -r
+      }')" | jq .content[0].text -r | sed 's/</<lt>/g'
   }
 }
 
-map global user l -docstring llm ': llm<ret>'
+declare-user-mode llm
+
+map global user l -docstring llm ': enter-user-mode llm<ret>'
+
+map global llm i -docstring 'llm without prompt' ': llm<ret>'
+map global llm p -docstring 'llm with prompt' ': llm-prompt<ret>'
